@@ -1,0 +1,163 @@
+\documentclass{article}
+\usepackage[margin=1.4in]{geometry}
+\usepackage{wrapfig}
+\usepackage{graphicx}
+
+\title{Valley Boyz Hackers}
+\author{Karthik Rajkumar, Shardul Kothapalli, Sachin Konan}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% Here is the abstract.
+\begin{abstract}
+	We propose completely eliminating the lottery system in favor of a machine learning-based ranking system which is able to account for deliberate losing (tanking) throughout the season.
+\end{abstract}
+%----
+\bigbreak
+\text{$\tab$\textbf{Introduction: }The NBA Draft serves as a lifeline for bottoming teams, replete with fresh young talent that they hope can bring them back to relevance. Unfortunately, while attempting to ameliorate the prevalence of tanking, the lottery system as well as its recent revision has somewhat contributed to perpetual tanking: the 2019 lottery is a prime example. Developing, young, but poorly constructed teams such as the Atlanta Hawks, Chicago Bulls, and the Phoenix Suns, have looked to the draft to build their teams, but were only able to land the 8th, 7th, and 6th picks, respectively. Meanwhile, teams like the Memphis Grizzlies and the New Orleans Pelicans landed the 2nd and 1st overall picks in the draft, which is a testament to the infallibility of the system for the simple fact that these two teams were the ones tanking: the Pelicans rested their star player for 4th quarters for over half the season, and as soon as the Grizzlies entered a mid-season slump, sent away their franchise cornerstone, Marc Gasol, and were simultaneously actively shopping Mike Conley Jr.}
+\bigbreak
+\text{We seek to determine an effective win-loss record that accounts for tanking throughout the season. This adjusted win-loss ratio will be utilized to determine drafting order.
+Hypothesis: We posit that by determining a quantitative measure of “tanking” and “non-tanking” games the NBA can better calculate the true win-loss ratios for teams near the end of a season. Furthermore, we predict that games where a given team has lower average lineup age, minutes played of the best lineup, offensive/defensive rating, and Pythagorean win shares, can generally be classified as a “tanking” game.}
+\bigbreak
+\text{\textbf{Potential applications:} This project can provide key insights into how to reform the nba draft process. The NBA’s current method to curb tanking with weighted odds is rather rudimentary considering we have modern analytics to accurately assess the quality of teams. However, even if the NBA is unwilling to let go of the lottery completely, our metrics can still help create better lottery odds that is more fair for teams. We envision a draft system where the distribution of high quality draft picks is determined by a win-loss record independent of any “tanking” a team might enact.}
+\bigbreak
+\text{\textbf{Pre-Processing Data/Types of Data Used:} A crucial step to classifying whether a game can be classified as “tanking” or “non-tanking” is analyzing the game’s statistics in relation to cumulative/running performance. This is why several of the variables we have chosen are differential to a sliding window or cumulative total. The amount of variables explained below is open to an increase during actual development, depending on how they would bolster the model.
+\bigbreak
+1. \textit{Age Differential:} The difference between the average weighted age of a team across a season and for a particular game. The weightage originates from the minutes played by each player on the roster, so if a 40 year old player plays zero mins, then his age isn’t accounted for.
+\bigbreak
+2. \textit{Golden Lineup Play $\%$:} a) For each game, create a list of active players. b) Filter NBA data for golden lineup that is a subset of active players in a game. c) Calculate total minutes of that lineup/ (48 minutes * 5 players). We can figure out when teams are resting their best possible lineup or conversely when they are playing them.
+\bigbreak
+3/4. \textit{Team offensive/defensive rating differential:} (difference between rolling average offensive rating/defensive rating and game). We can figure out when overall team OR/DR is down.
+\bigbreak
+5. \textit{Pythagorean win differential:} a) look at win loss within current sliding window. b) look at the Pythagorean win loss during current sliding window. c) apply that to every single game (stride length variable). We can figure out if a team is underperforming, performing well, or at average.}
+\bigbreak
+6. \textit{Misc:} Margin of Victory differential, Pace differential, PIE differential, and game number.
+
+\bigbreak
+**Statistics 3-5 are differentials that are compared to rolling average. This rolling average will be calculated every 10 games at a stride of 1, to include the inherent ups-and-downs of a team through a season**
+\bigbreak
+
+\text{\textbf{Proposed methodology:}} Our training set will consist of several years of game/team data. We choose to only analyze losses because even our model classifies a win as a “tanking” game, we do not want to double count it when we conduct the W-L record adjustment. We assume an input tensor size of  ($\#$ of lost  games * 30 teams) x 5 ($\#$ of statistics stated above). This prompt essentially boils down to an unsupervised learning problem, because we are trying to classify whether the result of each game can be attributed to “tanking” or true failure to perform, without any knowledge of the game being a “tanked game.” 
+\bigbreak
+\begin{wrapfigure}{l}{0.33\textwidth}
+    \centering
+    \includegraphics[width=0.28\textwidth]{clust.png}
+    
+\end{wrapfigure}
+To determine whether a game is tanked or not, we will investigate all the effectiveness of various clustering algorithms such as k-means clustering, self-organizing maps, neural autoencoders, etc on all games that resulted in a loss. Once two discrete clusters can be generated, we will remove the lost games attributed to “tanking” so theoretically we can calculate more accurate win-loss records. 
+
+\bigbreak
+The idea that teams will begin optimizing their losses in order to end up in the “tanking” cluster is a legitimate concern; however, since machine learning algorithms are black boxes, teams should not be able to optimize according to a formula, as these models consist of complex convolutions and optimizations that make it nearly impossible to track outputs back to inputs.
+
+\newpage
+
+\text{\textbf{Data Preprocessing and Extraction:}} All data was either were collected from the NBA website or the data links provided in the NBA dropbox. Data was extracted to a JSON format, generally of the following format: (year -> teamhash -> tuple(gameid, normalizedstat)). By keeping this format consist across all statistics, data pre-processing was relatively compact and didn't require much manipulation to be integrated into a final, compressed, tensor, whose rows represented gameids and columns represented each of the nine recorded statistics.
+
+\text{\textbf{Data Clustering and Analysis:}} The processed tensor was fed into a k-means clustering algorithm, which seeks to cluster the data into user-defined groups, based on minimizing the variance between the centroid of the cluster and any surrounding points. There are a plethora of different clustering methods that can potentially be used; however, it was found that k-means clustering performed the best. T-Distributed Stochastic Neighbor Embedding and Gaussian Mixture Models, both of which aim to cluster data into n groups; however, it was found that these methods were more computationally expensive and yielded the same results as k-means.
+
+K-means attempts to minimizes the following methodology:
+
+\begin{enumerate}
+\item Start with initial guesses for cluster centers (centroids)
+
+\item For each data point, find closest cluster center (partitioning step)
+
+\item Replace each centroid by average of data points in its partition
+
+\item Iterate 1+2 until convergence
+
+\end{enumerate}
+
+Write $x_i = (x_{i1}, ... x_{ip})$:
+
+If centroids are $m_1, m_2, ... m_k$, and partitions are
+
+$c_1, c_2, ... c_k$, then one can show that K-means converges to a {\it local} minimum of
+
+\[
+\sum^K_{k=1} \sum_{i\in c_k} || x_i - m_k ||^2 \ \ \ \ \ \ \ \rm Euclidean \ distance
+\]
+
+(within cluster sum of squares) \\
+
+{\bf In practice:}
+
+\begin{itemize}
+
+\item Try many random starting centroids (observations) and choose solution with smallest of squares
+
+\end{itemize}
+
+{\bf Stepping back}
+
+\begin{itemize}
+
+\item All clustering algorithms start with a dissimilarity measure for $j^{th}$ feature
+
+$$d_j (x_{ij} , x_{i' j}) \ \rm and\ define $$
+
+$$D (x_i, x_{i'}) = \sum^P_{j=1} d_j (x_{ij}, x_{{i'}j} ) $$
+
+\item[] Usually $d_j (x_{ij}, x_{i' j}) = (x_{ij} - x_{i'j})^2$
+
+\end{itemize}
+
+
+
+\bigbreak
+\bigbreak
+\text{\textbf{Clustering Visualization:}}
+
+\begin{center}
+    \includegraphics[width=1.05\textwidth]{data.PNG}
+\end{center}
+
+The above plots show the breakdown of the generated k-means clustering across all the teams of the NBA and ours featured data-set. The bar graph to the top right of the above figure show the breakdown of losses that can be considered "tanked" (represented by blue), versus "tanked" (represented by red). It interesting to note that high performing teams such as the Golden State Warriors or Boston Celtics, have lower blue bars, indicating the algorithm is working. Additionally, the bottom-most bare graph shows the correlation of clusters across each of the different combinations of features, which in this case is 9 choose 2. Most of the correlated features actually have no distinct clusters, except for a few where distinct red and blue regions are drawn.
+
+
+\bigbreak
+\bigbreak
+\textbf{Case Study:} We used the 2017-18 season to corroborate our findings. Then, we filtered main cluster with only lottery teams. After that, we subtracted the number of detected tanked games from the teams’ W/L record for that year. For example with 9 tanked games and an original W/L record of 34-48 would have an adjusted record of 34-39/ This serves as a “deletion” of the game. Then, we create new standings are based on win percentage.
+
+\begin{center}
+    \includegraphics[width=0.9\textwidth]{aytonnn.png}
+\end{center}
+
+\begin{center}
+    \includegraphics[width=1.05\textwidth]{booker.png}
+\end{center}
+\bigbreak
+
+\bigbreak
+
+\textbf{Alternate Methodologies:} In addition to investigating K-Means, we researched the effectiveness of PCA (Principal Component Analysis) and T-SNE(t-squared stochastic neighbor embedding) as preprocessing step, and GMM (Gaussian Mixture Model) as a substitute for K-Means clustering.
+
+T-SNE and PCA are dimensionality reduction techniques which seek to reduce high-dimensional data down to features that explain the most variance within the data set.
+
+\begin{itemize}
+	\item Centralized the data (subtract the mean). 
+	\item Calculate the × covariance matrix:
+    \[C=\frac{1}{N-1}X^{T}X\]
+	\item Calculate the eigenvectors of the covariance matrix.
+    \item Select $m$ eigenvectors that correspond to the largest $m$ eigenvalues to be the new basis.
+\end{itemize}
+
+We found that by using PCA or T-SNE, we could reduce the data down to 5 dimensions, while retaining around 80\% variance in the dataset. However, this didn't end up impacting the clustering variance, so we kept all 9 dimensions. Afterwards, we tested the effectiveness of GMM's on the mean squared error of the clusters. GMM's differ from K-means clustering, because they can perform clustering elliptically, rather than purely circularly, which theoretically should provide better MSE numbers, because we didn't know the nature of the data beforehand. Since there was no significant difference, we kept the faster k-means clustering model.
+
+\begin{table}[]
+\centering
+    \begin{tabular}{lll}
+            & Cluster 1 & Cluster 2 \\
+    GMM     & 3.3418    & 4.6836    \\
+    K-Means & 3.2145    & 4.5789   
+    \end{tabular}
+\end{table}
+
+
+\textbf{Conclusion:} A shortcoming is that teams can be penalized for poor performance in the beginning of the year. Some of the applications, as previously states is that we could institute a new draft system without lottery or reformed odds that take into account tanking. The league can take action by punishing significant tanking with the loss of draft picks. For future work, we could add more features and do more case studies based on expert testimonials to refine model.
+
+
+\end{document}

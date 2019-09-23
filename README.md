@@ -48,3 +48,25 @@ order to end up in the tanking cluster is a legitimate concern;
 however, since machine learning algorithms are black boxes, teams should not be able to optimize according to a formula, as these models consist of complex convolutions and optimizations
 that make it nearly impossible to track outputs back to inputs.
 
+## Data Preprocessing and Extraction: 
+All data was either were collected from the NBA
+website or the data links provided in the NBA dropbox. Data was extracted to a JSON format,
+generally of the following format: (year -¿ teamhash -¿ tuple(gameid, normalizedstat)). By
+keeping this format consist across all statistics, data pre-processing was relatively compact and
+didn’t require much manipulation to be integrated into a final, compressed, tensor, whose rows
+represented gameids and columns represented each of the nine recorded statistics.
+
+## Data Clustering and Analysis: 
+The processed tensor was fed into a k-means clustering
+algorithm, which seeks to cluster the data into user-defined groups, based on minimizing the
+variance between the centroid of the cluster and any surrounding points. There are a plethora
+of different clustering methods that can potentially be used; however, it was found that k-means
+clustering performed the best. T-Distributed Stochastic Neighbor Embedding and Gaussian
+Mixture Models, both of which aim to cluster data into n groups; however, it was found that
+these methods were more computationally expensive and yielded the same results as k-means.
+K-means attempts to minimizes the following methodology:
+> 1. Start with initial guesses for cluster centers (centroids)
+> 2. For each data point, find closest cluster center (partitioning step)
+> 3. Replace each centroid by average of data points in its partition
+> 4. Iterate 1+2 until convergence
+

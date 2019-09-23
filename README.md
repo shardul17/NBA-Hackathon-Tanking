@@ -29,3 +29,22 @@ average.
 **Statistics 3-5 are differentials that are compared to rolling average. This rolling average
 will be calculated every 10 games at a stride of 1, to include the inherent ups-and-downs of a
 team through a season**
+
+## Proposed methodology: 
+Our training set will consist of several years of game/team data.
+We choose to only analyze losses because even our model classifies a win as a tanking game,
+we do not want to double count it when we conduct the W-L record adjustment. We assume
+an input tensor size of (# of lost games * 30 teams) x 5 (# of statistics stated above). This
+prompt essentially boils down to an unsupervised learning problem, because we are trying to
+classify whether the result of each game can be attributed to tanking or true failure to perform,
+without any knowledge of the game being a tanked game.
+To determine whether a game is tanked or not, we will investigate all the effectiveness of various clustering algorithms
+such as k-means clustering, self-organizing maps, neural autoencoders, etc on all games that resulted in a loss. Once two
+discrete clusters can be generated, we will remove the lost
+games attributed to tanking so theoretically we can calculate
+more accurate win-loss records.
+The idea that teams will begin optimizing their losses in
+order to end up in the tanking cluster is a legitimate concern;
+however, since machine learning algorithms are black boxes, teams should not be able to optimize according to a formula, as these models consist of complex convolutions and optimizations
+that make it nearly impossible to track outputs back to inputs.
+

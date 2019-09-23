@@ -65,8 +65,38 @@ clustering performed the best. T-Distributed Stochastic Neighbor Embedding and G
 Mixture Models, both of which aim to cluster data into n groups; however, it was found that
 these methods were more computationally expensive and yielded the same results as k-means.
 K-means attempts to minimizes the following methodology:
-> 1. Start with initial guesses for cluster centers (centroids)
-> 2. For each data point, find closest cluster center (partitioning step)
-> 3. Replace each centroid by average of data points in its partition
-> 4. Iterate 1+2 until convergence
+1. Start with initial guesses for cluster centers (centroids)
+2. For each data point, find closest cluster center (partitioning step)
+3. Replace each centroid by average of data points in its partition
+4. Iterate 1+2 until convergence
+
+![Clustering on lost games from 2007-2019](https://i.imgur.com/goVPLhg.png)
+
+The above plots show the breakdown of the generated k-means clustering across all the
+teams of the NBA and ours featured data-set. The bar graph to the top right of the above
+figure show the breakdown of losses that can be considered ”tanked” (represented by blue),
+versus ”tanked” (represented by red). It interesting to note that high performing teams such
+as the Golden State Warriors or Boston Celtics, have lower blue bars, indicating the algorithm
+is working. Additionally, the bottom-most bare graph shows the correlation of clusters across
+each of the different combinations of features, which in this case is 9 choose 2. Most of the
+correlated features actually have no distinct clusters, except for a few where distinct red and
+blue regions are drawn.
+
+## Case Study
+We used the 2017-18 season to corroborate our findings. Then, we filtered
+main cluster with only lottery teams. After that, we subtracted the number of detected tanked
+games from the teams W/L record for that year. For example with 9 tanked games and an
+original W/L record of 34-48 would have an adjusted record of 34-39/ This serves as a deletion
+of the game. Then, we create new standings are based on win percentage.
+
+![Trends for three of the statistics over the course of the season for four different types of teams](https://i.imgur.com/130DEK0.png)
+![Change in draft order with our implemented methodology](https://i.imgur.com/3ctIybn.png)
+
+The reason the 2017-18 season was selected was because two teams, the Brooklyn Nets and the LA Lakers, did not have a first round pick that year. So, hypothetically, they should have no reason to tank, and per our model, they had the two lowest values of tanked games. In between them is the Charlotte Hornets, who were pushing for the playoffs. 
+
+
+
+
+
+
 
